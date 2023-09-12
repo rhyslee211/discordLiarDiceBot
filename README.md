@@ -1,1 +1,1 @@
-# discordLiarDiceBot
+# Discord Liar Dice Bot
