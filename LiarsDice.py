@@ -1,3 +1,4 @@
+from typing import final
 import discord
 import re
 import random
@@ -31,6 +32,7 @@ players = {}
 turn = ""
 lastBet = [0, 0]
 lastTurn = ""
+finalCount = [0,0]
 
 @client.event
 async def on_ready():
@@ -47,6 +49,8 @@ async def on_ready():
     global lastTurn
     lastTurn = ""
     global gameChannel
+    global finalCount
+    finalCount = [0,0]
 
 @client.event
 async def on_message(message):
@@ -58,19 +62,19 @@ async def on_message(message):
     global gameChannel
 
     if(message.content.startswith('ld! ') ): #all commands begin with a ld!
-        if (message.content).strip().lower() == ('ld! creategame'):
+        if (message.content).strip().lower() == ('ld! create'):
             if gameState == 0: #change gamestate to created if not
                 gameState = 1
                 await message.channel.send("A game has been created.")
                 gameChannel = message.channel
 
-        elif (message.content).strip().lower() == ('ld! quitgame'):
+        elif (message.content).strip().lower() == ('ld! quit'):
             if gameState == 1: #change gamestate to None if one is created
                 gameState = 0
                 await message.channel.send("Game was quit.")
                 clearVars()
 
-        elif (message.content).strip().lower() == ('ld! currentgame'):
+        elif (message.content).strip().lower() == ('ld! current'):
             if gameState == 1:
                 await message.channel.send("There is already a created game.")
             elif gameState == 2:
@@ -90,7 +94,7 @@ async def on_message(message):
             else:
                 await message.channel.send("A game has not been created. Do 'ld! CreateGame to create one!'")
 
-        elif (message.content).strip().lower() == ('ld! startgame'):
+        elif (message.content).strip().lower() == ('ld! start'):
             if(gameState == 1):
                 if len(list(players.keys())) >= 2:
                     gameState = 2
@@ -128,9 +132,11 @@ async def on_message(message):
             if gameState == 2:
                 if turn == message.author.name:
                     if(callLiar(lastBet) == 0):
-                        await message.channel.send("The winner is: " + lastTurn)
+                        await message.channel.send("The winner is: " + lastTurn + "\n\
+There were " + betString(finalCount))
                     else:
-                        await message.channel.send("The winner is: " + message.author.name)
+                        await message.channel.send("The winner is: " + message.author.name+ "\n\
+There were " + betString(finalCount))
                     await printAllDice()
                     await message.channel.send("Good Game! Do 'ld! startgame' to play again!")
                     clearVars()
@@ -143,21 +149,24 @@ async def on_message(message):
 
         elif (message.content).strip().lower() == ('ld! help'):
             await message.channel.send("All commands begin with a 'ld!'\n\
-                                       CreateGame - Creates a new lobby for a game of Liar's Dice.\n\
-                                       StartGame - Starts the game.\n\
-                                       QuitGame - Quits the game.\n\
-                                       Join - Joins the current lobby.\n\
-                                       Bet - Bet the number of dice(Input two separate numbers).\n\
-                                       Liar - Call the last player a Liar.\n\
-                                       Rules - View the rules of Liar's Dice.")
+Create - Creates a new lobby for a game of Liar's Dice.\n\
+Start - Starts the game.\n\
+Quit - Quits the game.\n\
+Join - Joins the current lobby.\n\
+Bet - Bet the number of dice(Input two separate numbers).\n\
+Liar - Call the last player a Liar.\n\
+Rules - View the rules of Liar's Dice.")
 
         elif (message.content).strip().lower() == ('ld! rules'):
             await message.channel.send("To play you must have at least two players but the recommended number is three to five.\n\
-                                       The goal is to bet a correct number of dice on the board. You get to see your five dice but you are playing everybody in the game's dice when you bet. Player's bet in order until someone calls 'Liar.'\n\
-                                       A player can only call 'Liar' on the bet that happened the turn before their turn. If 'Liar' is called, the dice are counted and if the number of dice is less than or equal to the bet number, the player who was called a Liar wins. If the number of dice is greater, the player who called Liar wins.\n\
-                                       Bets must be increased by the number on the die, or by the number of dice. For example, 2 4s can be bet on by 3 3s or 2 6s but not by 1 6")
+The goal is to bet a correct number of dice on the board. You get to see your five dice but you are playing everybody in the game's dice when you bet. Player's bet in order until someone calls 'Liar.'\n\
+A player can only call 'Liar' on the bet that happened the turn before their turn. If 'Liar' is called, the dice are counted and if the number of dice is less than or equal to the bet number, the player who was called a Liar wins. If the number of dice is greater, the player who called Liar wins.\n\
+Bets must be increased by the number on the die, or by the number of dice. For example, 2 4s can be bet on by 3 3s or 2 6s but not by 1 6")
         
-                
+        elif (message.content).strip().lower() == ('ld! currentbet'):     
+            if gameState == 2:
+                if lastBet != [0,0]:
+                    await message.channel.send("The current bet is: " + betString(lastBet))
         elif (message.content).strip().lower() == ('ld! leave'):
             playerIn = players.pop(message.author.name,0)
             if playerIn == 0:#player not in
@@ -165,7 +174,7 @@ async def on_message(message):
             else:
                 await message.channel.send(message.author + " removed from the game.")
         else:
-            await message.channel.send("Do ld! help for a list of Liar's Dice commands.")
+            await message.channel.send("Unknown command. Do ld! help for a list of Liar's Dice commands.")
 
 def betString(bet):
     return(str(bet[0]) + " " + intString(bet[1]))
@@ -208,25 +217,27 @@ def nextTurn(currTurn):
 def callLiar(bet):
 
     global players
+    global finalCount
 
     totCount = 0
 
     numberOfDice = bet[0]
     numberOnDice = bet[1]
 
-    print("Number " + str(numberOnDice))
-    print("Die " + str(numberOnDice))
+    #print("Number " + str(numberOfDice))
+    #print("Die " + str(numberOnDice))
 
     for values in players.values():
         count = 0
         for diceNum in values:
             if diceNum == numberOnDice:
                 count = count +1
-        print(count)
         totCount = totCount + count
-        print(totCount)
+
+    finalCount[0] = totCount
+    finalCount[1] = numberOnDice
     
-    if count <= numberOfDice: #0 means not a lie, 1 means liar
+    if totCount <= numberOfDice: #0 means not a lie, 1 means liar
         return 0
     else:
         return 1
@@ -251,7 +262,7 @@ async def startGame(channelName):
         players[item] = rollDice()
         playerName = discord.utils.get(channelName.guild.members, name=item)
 
-        await playerName.send("Your dice are: " + getDice(players[item]))
+        await playerName.send("Your rolls are: " + getDice(players[item]))
     
     turn = (list(players.keys()))[0]
 
@@ -274,5 +285,6 @@ def clearVars():
     turn = ""
     lastBet = [0, 0]
     lastTurn = ""
+    finalCount = [0,0]
 
 client.run(config.discord_api_key)
