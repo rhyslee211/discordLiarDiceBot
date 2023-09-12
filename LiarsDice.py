@@ -1,6 +1,7 @@
 import discord
 import re
 import random
+import config
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -160,9 +161,9 @@ async def on_message(message):
         elif (message.content).strip().lower() == ('ld! leave'):
             playerIn = players.pop(message.author.name,0)
             if playerIn == 0:#player not in
-                await message.channel.send(message.channel.author + " not found in the game.")
+                await message.channel.send(message.author + " not found in the game.")
             else:
-                await message.channel.send(message.channel.author + " removed from the game.")
+                await message.channel.send(message.author + " removed from the game.")
         else:
             await message.channel.send("Do ld! help for a list of Liar's Dice commands.")
 
@@ -274,4 +275,4 @@ def clearVars():
     lastBet = [0, 0]
     lastTurn = ""
 
-client.run('YOUR_TOKEN_HERE')
+client.run(config.discord_api_key)
