@@ -237,7 +237,7 @@ def callLiar(bet):
     finalCount[0] = totCount
     finalCount[1] = numberOnDice
     
-    if totCount <= numberOfDice: #0 means not a lie, 1 means liar
+    if totCount >= numberOfDice: #0 means not a lie, 1 means liar
         return 0
     else:
         return 1
